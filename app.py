@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
+import datetime as time
 
 
 def create_app():
@@ -78,16 +79,17 @@ def create_app():
             email = request.form['email']
             full_name = request.form['name']
             password = request.form['password']
-            print(full_name, email, password)
             new_user = User.query.filter_by(email=email).first()
-            if new_user:
+            if '@' not in email:
+                error = 'Invalid email format'
+                return render_template('register.html', error=error)
+            elif new_user:
                 return render_template('existingaccount.html')
             else:
                 new_user = User(email=email, name=full_name, password=password)
                 db.session.add(new_user)
                 db.session.commit()
                 return render_template('registersuccess.html', email=email)
-        return render_template('registersuccess.html')
     return app
 
 
