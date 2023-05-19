@@ -1,7 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
-import datetime as time
 
 
 def create_app():
@@ -18,14 +17,21 @@ def create_app():
         email = db.Column(db.String(120), unique=True, nullable=False)
         name = db.Column(db.String(120))
         password = db.Column(db.String(120), nullable=False)
+        is_admin = db.Column(db.Boolean, default=False)
 
-        def __init__(self, email, name, password):
+        def __init__(self, email, name, password, is_admin=False):
             self.email = email
             self.name = name
             self.password = password
+            self.is_admin = is_admin
 
     with app.app_context():
         db.create_all()
+        admin_user = User.query.filter_by(email='gaurabbhattarai29@gmail.com').first()
+        if not admin_user:
+            admin_user = User(email='gaurabbhattarai29@gmail.com', name='Admin', password='d09154c8b29a10d6f8f91ff9d4487c2731187dcb62660575d0e2e32007d6ca91', is_admin=True)
+            db.session.add(admin_user)
+            db.session.commit()
 
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -50,18 +56,50 @@ def create_app():
             print(f"User {user.id}: {user.name} ({user.email}, {user.password})")
         return "User data printed in the terminal"
 
-    @app.route('/login', methods=['GET', 'POST'])
-    def loginpage():
-        if request.method == 'POST':
-            email = request.form['email']
-            password = request.form['password']
-            user = User.query.filter_by(email=email).first()
-            if user is None or not user.password == password:
-                error = 'Invalid email or password'
-                return render_template('login.html', error=error)
-            login_user(user)
+    @app.route('/admin', methods=['GET', 'POST'])
+    @login_required
+    def admin_panel():
+        if not current_user.is_admin:
             return redirect(url_for('home'))
-        return render_template('login.html')
+
+        if request.method == 'POST':
+            action = request.form.get('action')
+            if action == 'create':
+                email = request.form['email']
+                full_name = request.form['name']
+                password = request.form['password']
+
+                existing_user = User.query.filter_by(email=email).first()
+                if existing_user:
+                    error_message = "User already exists"
+                    return render_template('admin_panel.html', error_message=error_message)
+                else:
+                    new_user = User(email=email, name=full_name, password=password)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    success_message = "New user created successfully"
+                    return render_template('admin_panel.html', success_message=success_message)
+
+            elif action == 'delete':
+                user_id = request.form['user_id']
+                user = User.query.get(user_id)
+                if user:
+                    db.session.delete(user)
+                    db.session.commit()
+                    return jsonify({'message': 'User deleted successfully'})
+
+            elif action == 'edit':
+                user_id = request.form['user_id']
+                user = User.query.get(user_id)
+                if user:
+                    user.email = request.form['email']
+                    user.name = request.form['name']
+                    user.password = request.form['password']
+                    db.session.commit()
+                    return jsonify({'message': 'User updated successfully'})
+
+        users = User.query.all()
+        return render_template('admin_panel.html', users=users)
 
     @app.route('/logout')
     @login_required
