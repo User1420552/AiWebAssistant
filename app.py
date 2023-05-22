@@ -29,13 +29,15 @@ def create_app():
         db.create_all()
         admin_user = User.query.filter_by(email='gaurabbhattarai29@gmail.com').first()
         if not admin_user:
-            admin_user = User(email='gaurabbhattarai29@gmail.com', name='Admin', password='d09154c8b29a10d6f8f91ff9d4487c2731187dcb62660575d0e2e32007d6ca91', is_admin=True)
+            admin_user = User(email='gaurabbhattarai29@gmail.com', name='Admin',
+                              password='d09154c8b29a10d6f8f91ff9d4487c2731187dcb62660575d0e2e32007d6ca91',
+                              is_admin=True)
             db.session.add(admin_user)
             db.session.commit()
 
     login_manager = LoginManager()
     login_manager.init_app(app)
-    login_manager.login_view = 'loginpage'
+    login_manager.login_view = ''
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -49,6 +51,19 @@ def create_app():
     def home2():
         return render_template('home.html')
 
+    @app.route('/login', methods=['GET', 'POST'])
+    def loginpage():
+        if request.method == 'POST':
+            email = request.form['email']
+            password = request.form['password']
+            user = User.query.filter_by(email=email).first()
+            if user is None or not user.password == password:
+                error = 'Invalid email or password'
+                return render_template('login.html', error=error)
+            login_user(user)
+            return redirect(url_for('home'))
+        return render_template('login.html')
+
     @app.route('/users')
     def get_all_users():
         users = User.query.all()
@@ -60,7 +75,8 @@ def create_app():
     @login_required
     def admin_panel():
         if not current_user.is_admin:
-            return redirect(url_for('home'))
+            error = "You do not have access to that"
+            return render_template("home.html", error=error)
 
         if request.method == 'POST':
             action = request.form.get('action')
@@ -105,7 +121,8 @@ def create_app():
     @login_required
     def logout():
         logout_user()
-        return redirect(url_for('home'))
+        logout_success = "Successfully logged out"
+        return render_template("home.html", logout=logout_success)
 
     @app.route('/register')
     def registerpage():
