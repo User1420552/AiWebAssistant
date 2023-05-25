@@ -27,25 +27,26 @@
       <li class="nav-item">
         <a class="nav-link" href="/portfolio">Timetable</a>
       </li>
-      <li class="nav-item">
-        <a class="nav-link" href="/login">Login</a>
-      </li>
-      <li class="nav-item">
+      <li>
+        {% if current_user.is_authenticated %}
         <a class="nav-link" href="/logout">Logout</a>
+        {% else %}
+        <a class="nav-link" href="/login">Login</a>
+        {% endif %}
       </li>
     </ul>
   </div>
 </nav>
     <h1>Enter your details below to get started</h1>
     <form id="email" action="{{ url_for('registersuccess') }}" method="post">
-    <input id="emailInput" type="text" name="email" placeholder="Enter your email"><br>
+    <input id="emailInput" type="text" name="email" placeholder="Enter your email" required><br>
 
     <form id="name" action="{{ url_for('registersuccess') }}" method="post">
-    <input id="nameInput" type="text" name="name" placeholder="Enter your full name"><br>
+    <input id="nameInput" type="text" name="name" placeholder="Enter your full name" required><br>
 
     <form id="password" action="{{ url_for('registersuccess') }}" method="post">
-    <input id="passwordInput" type="text" name="password" placeholder="Create a password"><br>
-      <button id="allSubmit" type="sumbit" value="Submit" class="btn btn-primary" style="margin-top: 5px;">Register</button>
+    <input id="passwordInput" type="text" name="password" placeholder="Create a password" required><br>
+      <button id="allSubmit" type="sumbit" value="Submit" class="btn btn-primary" style="margin-top: 5px;" >Register</button>
         {% if error %}
     <p class="error">{{ error }}</p>
 {% endif %}

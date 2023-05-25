@@ -34,7 +34,29 @@
     </ul>
   </div>
 </nav>
-    <h1>Successful registration, you may <a href="/login">login</a> now</h1>
+    <h1>User Search</h1>
+    <form method="POST" action="/admin-edit-user-search">
+        <div class="form-group">
+            <label for="search_email">Search by Email:</label>
+            <input type="email" class="form-control" id="search_email" name="search_email" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    <h2>Search Results:</h2>
+    {% if users %}
+        <ul>
+            {% for user in users %}
+                <li><a href="/admin-edit-user/{{ user.id }}">{{ user.name }} - {{ user.email }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No users found.</p>
+    {% endif %}
+
+    {% if success_delete %}
+    <p class="error">{{ success_delete }}</p>
+{% endif %}
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>

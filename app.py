@@ -80,42 +80,83 @@ def create_app():
 
         if request.method == 'POST':
             action = request.form.get('action')
+
             if action == 'create':
-                email = request.form['email']
-                full_name = request.form['name']
-                password = request.form['password']
-
-                existing_user = User.query.filter_by(email=email).first()
-                if existing_user:
-                    error_message = "User already exists"
-                    return render_template('admin_panel.html', error_message=error_message)
-                else:
-                    new_user = User(email=email, name=full_name, password=password)
-                    db.session.add(new_user)
-                    db.session.commit()
-                    success_message = "New user created successfully"
-                    return render_template('admin_panel.html', success_message=success_message)
-
-            elif action == 'delete':
-                user_id = request.form['user_id']
-                user = User.query.get(user_id)
-                if user:
-                    db.session.delete(user)
-                    db.session.commit()
-                    return jsonify({'message': 'User deleted successfully'})
+                return redirect(url_for('admin-create'))
 
             elif action == 'edit':
-                user_id = request.form['user_id']
-                user = User.query.get(user_id)
-                if user:
-                    user.email = request.form['email']
-                    user.name = request.form['name']
-                    user.password = request.form['password']
-                    db.session.commit()
-                    return jsonify({'message': 'User updated successfully'})
+                return redirect(url_for('admin-edit'))
 
         users = User.query.all()
         return render_template('admin_panel.html', users=users)
+
+    @app.route('/admin-create-user', methods=['GET', 'POST'])
+    @login_required
+    def admin_create():
+        if not current_user.is_admin:
+            error = "You do not have access to that"
+            return render_template("home.html", error=error)
+
+        if request.method == 'POST':
+            email = request.form['email']
+            full_name = request.form['name']
+            password = request.form['password']
+
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                error_message = "User already exists"
+                return render_template('admin_create.html', error_message=error_message)
+            else:
+                new_user = User(email=email, name=full_name, password=password)
+                db.session.add(new_user)
+                db.session.commit()
+                success_message = "New user created successfully"
+                return render_template('admin_create.html', success_message=success_message)
+
+        return render_template('admin_create.html')
+
+    @app.route('/admin-edit-user-search', methods=['GET', 'POST'])
+    @login_required
+    def admin_edit_search():
+        if not current_user.is_admin:
+            error = "You do not have access to that"
+            return render_template("home.html", error=error)
+
+        if request.method == 'POST':
+            search_email = request.form['search_email']
+            users = User.query.filter(User.email.like(f"%{search_email}%")).all()
+        else:
+            users = []
+
+        return render_template('admin_edit_user_search.html', users=users)
+
+    @app.route('/admin-edit-user/<int:user_id>', methods=['GET', 'POST'])
+    @login_required
+    def admin_edit_user(user_id):
+        if not current_user.is_admin:
+            error = "You do not have access to that"
+            return render_template("home.html", error=error)
+
+        user = User.query.get(user_id)
+        if not user:
+            return "User not found."
+
+        if request.method == 'POST':
+            action = request.form['action']
+            if action == 'edit':
+                user.email = request.form['email']
+                user.name = request.form['name']
+                user.password = request.form['password']
+                db.session.commit()
+                success_edit = 'User edit updated successfully'
+                return render_template('admin_edit.html', user=user, success_edit=success_edit)
+            elif action == 'delete':
+                db.session.delete(user)
+                db.session.commit()
+                success_delete = 'User deleted successfully'
+                return render_template('admin_edit_user_search.html', success_delete=success_delete)
+
+        return render_template('admin_edit.html', user=user)
 
     @app.route('/logout')
     @login_required

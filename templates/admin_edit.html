@@ -34,7 +34,27 @@
     </ul>
   </div>
 </nav>
-    <h1>Successful registration, you may <a href="/login">login</a> now</h1>
+    <h1>User Editing Form</h1>
+<form method="POST" action="{{ url_for('admin_edit_user', user_id=user.id) }}">
+    <input type="hidden" name="user_id" value="{{ user.id }}">
+    <div class="form-group">
+        <label for="email">Email:</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+    </div>
+    <div class="form-group">
+        <label for="name">Name:</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+    </div>
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" class="form-control" id="password" name="password" value="{{ user.password }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Update User</button>
+    <button type="submit" class="btn btn-danger" name="action" value="delete">Delete User</button>
+</form>
+        {% if success_edit %}
+    <p class="error">{{ success_edit }}</p>
+{% endif %}
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
