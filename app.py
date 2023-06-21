@@ -1,16 +1,28 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
+import os
+import pytesseract
+import pyscreenshot as ImageGrab
+from PIL import Image
+from yolov5 import YOLOv5
+from datetime import date, datetime, timezone
 
 
 def create_app():
     db = SQLAlchemy()
     app = Flask(__name__)
-    app.debug = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://///Users/gaurabbhattarai/PycharmProjects/EMS/instance/app.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = 'your-secret-key'
+    app.config['MAIL_SERVER'] = 'your-mail-server'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'your-email@example.com'
+    app.config['MAIL_PASSWORD'] = 'your-email-password'
     db.init_app(app)
+    model = YOLOv5("yolov5s.pt", device="cpu")
+    current_datetime = datetime.now
 
     class User(db.Model, UserMixin):
         id = db.Column(db.Integer, primary_key=True)
@@ -143,7 +155,7 @@ def create_app():
 
         if request.method == 'POST':
             action = request.form['action']
-            if action == 'edit':
+            if action == 'Update User':
                 user.email = request.form['email']
                 user.name = request.form['name']
                 user.password = request.form['password']
@@ -158,6 +170,47 @@ def create_app():
 
         return render_template('admin_edit.html', user=user)
 
+    def capture_screenshot(filepath):
+        screenshot = ImageGrab.grab()
+        screenshot.save(filepath)
+
+    def extract_text_from_image(image_path):
+        image = Image.open(image_path)
+        extracted_text = pytesseract.image_to_string(image)
+        return extracted_text
+
+    def save_text_to_file(text, text_filepath):
+        with open(text_filepath, 'w') as file:
+            file.write(text)
+
+    @app.route('/assistant', methods=['GET', 'POST'])
+    def assistant():
+        if not current_user.is_authenticated:
+            error = "Login or signup to continue"
+            return render_template("home.html", error=error)
+        user_id = current_user.id
+        user_folder = "ScreenshotFolder/"+"User "+str(user_id)
+        screenshot_filepath = user_folder+"/screenshot"+str(user_id)+str(current_datetime)+".png"
+        if not os.path.exists(user_folder):
+            os.makedirs(user_folder)
+            print("New user folder created")
+        capture_screenshot(screenshot_filepath)
+        print(user_folder, screenshot_filepath, user_id)
+        extracted_text = ''
+        if request.method == 'POST':
+            run = request.form.get('run')
+            if run == 'submit':
+                extracted_text = extract_text_from_image(screenshot_filepath)
+                text_filepath = "/Users/gaurabbhattarai/PycharmProjects/EMS/TextFolder/TextSaved"+str(user_id)+".txt"
+                if os.path.exists(text_filepath):
+                    os.remove(text_filepath)
+                save_text_to_file(extracted_text, text_filepath)
+            if run == 'reset':
+                text_filepath = "/Users/gaurabbhattarai/PycharmProjects/EMS/TextFolder/TextSaved"+str(user_id)+".txt"
+                extracted_text = ''
+                save_text_to_file(extracted_text, text_filepath)
+        return render_template('assistant_page.html', user_id=user_id, extracted_text=extracted_text)
+
     @app.route('/logout')
     @login_required
     def logout():
@@ -167,7 +220,7 @@ def create_app():
 
     @app.route('/register')
     def registerpage():
-        return render_template('register.html')
+        return render_template('email_verification.html')
 
     @app.route('/registersuccess', methods=['GET', 'POST'])
     def registersuccess():
@@ -178,7 +231,7 @@ def create_app():
             new_user = User.query.filter_by(email=email).first()
             if '@' not in email:
                 error = 'Invalid email format'
-                return render_template('register.html', error=error)
+                return render_template('email_verification.html', error=error)
             elif new_user:
                 return render_template('existingaccount.html')
             else:
@@ -191,5 +244,5 @@ def create_app():
 
 app = create_app()
 
-if __name__ == '__main__':
+if __name__ == '__name__':
     app.run(debug=True)
